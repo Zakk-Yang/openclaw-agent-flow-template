@@ -1,6 +1,16 @@
 # OpenClaw Agent Flow Template
 
-A simple starter for people who want two AI agents working inside one project.
+A simple starter for people who want OpenClaw to orchestrate two AI agents inside one project.
+
+The main idea of this project is not just "two agents exist."
+
+The important part is this:
+
+- OpenClaw acts as the orchestrator
+- it checks the project on a repeating heartbeat
+- when the repo is idle, it sends the next task to an agent
+- when the repo changes, it waits and checks again
+- this creates an iterative work loop instead of one-off agent calls
 
 This repo gives you:
 
@@ -20,12 +30,18 @@ If you want one machine-wide command that creates new projects from this templat
 This template follows a simple idea:
 
 1. OpenClaw runs on your machine.
-2. This repo keeps the project rules and agent roles.
-3. A background loop checks the project every 5 minutes.
-4. If nothing changed for 5 minutes, it can send work to one agent.
-5. If the project changed, it waits.
+2. OpenClaw is the orchestrator for the agent flow.
+3. This repo keeps the project rules and agent roles.
+4. A background loop checks the project every 5 minutes.
+5. If nothing changed for 5 minutes, it sends the next task to one agent.
+6. If the project changed, it waits, then checks again.
 
 The default rule is `diff-only`, which means the workflow reacts to project file changes, not just agent chatter.
+
+So the outstanding point of this template is:
+
+- OpenClaw is orchestrating an iterative agent workflow
+- not just launching isolated agent prompts
 
 ## Fast Start
 
