@@ -99,7 +99,7 @@ Ask agents to finish every run with:
 
 - what changed
 - what was verified
-- one short handoff sentence for the next fresh session
+- one short handoff sentence that captures the next step cleanly
 - one final status:
   - `continue`
   - `done`
@@ -111,18 +111,15 @@ This prompt contract is what lets the supervisor make sane dispatch decisions la
 
 ## Context Saturation
 
-There is one more stop-related problem to solve in long-running loops:
+Long-running loops still need a clean answer to "what happens when the thread gets large?"
 
-- even a useful lane eventually fills its chat context
-
-So a healthy loop should also:
+Default guidance for this template:
 
 1. keep the final report compact
-2. store that report in a lane handoff file
-3. rotate to a fresh session when the current thread gets too large
-4. continue from the handoff instead of reusing the saturated session
+2. let OpenClaw handle internal compaction/pruning
+3. keep the repo-side supervisor focused on dispatch timing and stop states
 
-This is how you keep the workflow automated without letting "100% context used" quietly break quality.
+That is simpler than adding custom repo-side fresh-session rollover unless you later prove you need it.
 
 ## Practical Outcome
 

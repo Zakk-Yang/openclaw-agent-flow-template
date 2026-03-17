@@ -33,7 +33,7 @@ That record is meant to answer:
 
 This makes the system easier to evaluate without requiring a git commit on every heartbeat.
 
-## Compact Reports And Handoffs
+## Compact Reports
 
 Each automated run should end with a short final block such as:
 
@@ -45,8 +45,6 @@ Each automated run should end with a short final block such as:
 - `HANDOFF`
 
 That gives the supervisor a compact summary it can record without depending on the full chat transcript.
-
-The supervisor can then write one handoff file per lane under `.openclaw/runtime/`, which becomes the seed context for any future fresh session.
 
 ## Stop Conditions
 
@@ -65,18 +63,15 @@ Then the supervisor or operator can stop redispatching lanes that are already do
 
 Without this, the loop can waste time on repeated no-op audits or repeated retries against the same blocker.
 
-## Context Rollover
+## Context Handling
 
-Long-running lanes also need a context limit strategy.
+OpenClaw already has built-in compaction and pruning for long sessions.
 
-Best practice:
+So the default best practice in this template is simpler:
 
-1. let the agent finish with a concise final report
-2. let the supervisor store that as the lane handoff
-3. when the current session gets too large, start a fresh session
-4. continue from the handoff instead of carrying the whole old thread forward
-
-That keeps the workflow iterative without slowly degrading the quality of the agent context.
+1. let OpenClaw manage long-session context internally
+2. keep agent final reports concise
+3. let the repo supervisor focus on dispatch timing, status, and summaries
 
 ## Hooks Vs Supervisor
 
@@ -87,7 +82,6 @@ Best practice:
 - **supervisor** owns dispatch decisions
 - **agent prompts** require the run to end with a status
 - **agent output** reports `continue`, `done`, `blocked`, or `defer`
-- **supervisor** also owns context rollover into a fresh session when needed
 - **hooks** handle side effects such as:
   - writing summaries
   - saving memory

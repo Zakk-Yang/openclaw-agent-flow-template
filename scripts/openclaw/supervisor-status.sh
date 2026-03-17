@@ -38,10 +38,9 @@ if [ -f "$LANE_STATE_FILE" ]; then
     for (const role of ["primary", "secondary"]) {
       const lane = payload[role];
       if (!lane) continue;
-      console.log(`- ${role}: status=${lane.status || "unknown"} session=${lane.sessionId || "none"} rollovers=${lane.rolloverCount || 0}`);
+      console.log(`- ${role}: status=${lane.status || "unknown"} session=${lane.sessionId || "none"}`);
       if (lane.goal) console.log(`  goal: ${lane.goal}`);
       if (lane.next) console.log(`  next: ${lane.next}`);
-      if (lane.handoffFile) console.log(`  handoff: ${lane.handoffFile}`);
     }
   ' "$LANE_STATE_FILE"
 else
@@ -57,7 +56,7 @@ if [ -f "$DISPATCH_HISTORY_FILE" ]; then
     for (const line of lines) {
       const entry = JSON.parse(line);
       const changed = Array.isArray(entry.changedPaths) ? entry.changedPaths : [];
-      console.log(`- ${entry.dispatchedAtIso} role=${entry.role} exit=${entry.exitCode} status=${entry.status || "unknown"} changed=${changed.length} rollover=${entry.rolledOverSession ? "yes" : "no"}`);
+      console.log(`- ${entry.dispatchedAtIso} role=${entry.role} exit=${entry.exitCode} status=${entry.status || "unknown"} changed=${changed.length}`);
       if (changed.length > 0) {
         console.log(`  files: ${changed.join(", ")}`);
       }

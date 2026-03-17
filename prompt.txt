@@ -40,14 +40,12 @@ Dispatch policy:
 - Build in explicit stop conditions so the loop knows when to stop.
 - Each agent run should end with one of: continue, done, blocked, or defer.
 - Do not keep redispatching a lane forever just because the repo is idle.
-- Build in automatic context rollover.
 - Require a compact final report format so the supervisor can write a short handoff file.
-- When an agent thread gets too full, start a fresh session and continue from the handoff instead of reusing the saturated thread.
+- Let OpenClaw handle context compaction internally instead of adding custom repo-side fresh-session rollover by default.
 - Keep the control split clean:
 - prompts define how agents report status
 - agents decide the status they return
 - the supervisor decides whether to dispatch again
-- the supervisor also decides when to roll a lane into a fresh session
 - hooks are optional side effects for logging, summaries, memory, or notifications
 
 Verification:
