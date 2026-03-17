@@ -1,10 +1,10 @@
 # examples
 
-This folder contains copyable examples.
+This folder contains examples you can copy.
 
-Current examples include:
+Right now it includes:
 
 - a data-plus-frontend split
 - a reusable master prompt
 
-Use these when you want to adapt the template quickly instead of starting from a blank page.
+Use these if you want to move quickly instead of starting from scratch.

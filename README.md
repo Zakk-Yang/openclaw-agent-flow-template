@@ -1,61 +1,55 @@
 # OpenClaw Agent Flow Template
 
-A small, public starter repo for running a two-agent OpenClaw workflow with:
+A simple starter for people who want two AI agents working inside one project.
 
-- project-local agent briefs
-- `tmux` heartbeat supervision
-- diff-only auto-dispatch
-- simple shell scripts
-- GSD-friendly structure
+This repo gives you:
 
-This template is meant to be copied into a real project, then edited in place.
+- a place to describe your project
+- a place to describe what each agent should do
+- scripts to start and check the workflow
+- a background loop that can wake up and send work automatically
 
-If you want one copy-paste prompt for Codex or another coding agent, use [prompt.txt](./prompt.txt).
+You can copy this repo into a real project and edit it there.
 
-If you want a machine-level bootstrap command for creating new projects from this template, see [docs/global-setup.md](./docs/global-setup.md).
+If you want one copy-paste instruction for Codex or another coding agent, use [prompt.txt](./prompt.txt).
 
-## What It Gives You
+If you want one machine-wide command that creates new projects from this template, see [docs/global-setup.md](./docs/global-setup.md).
 
-- one place to define your project goal and agent roles
-- one idempotent setup script for registering project agents
-- one shared dispatch wrapper plus two sample dispatch commands
-- one heartbeat supervisor that dispatches only when the repo is idle
-- one clear runtime state/log location
+## In Plain English
 
-## How It Works
+This template follows a simple idea:
 
-1. OpenClaw stays installed globally on your machine.
-2. This repo keeps agent roles, prompts, and orchestration scripts project-local.
-3. A `tmux` session runs a heartbeat loop.
-4. Every 5 minutes the supervisor checks repo diff/status.
-5. If the repo has stayed unchanged for 5 minutes, it dispatches one agent.
-6. If the repo changed, it does nothing.
+1. OpenClaw runs on your machine.
+2. This repo keeps the project rules and agent roles.
+3. A background loop checks the project every 5 minutes.
+4. If nothing changed for 5 minutes, it can send work to one agent.
+5. If the project changed, it waits.
 
-The default mode is `diff-only`. Agent session timestamp noise does not block dispatch.
+The default rule is `diff-only`, which means the workflow reacts to project file changes, not just agent chatter.
 
-## Quickstart
+## Fast Start
 
-1. Copy this repo or use it as a template.
-2. Edit [AGENTS.md](./AGENTS.md).
-3. Edit [.openclaw/project.json](./.openclaw/project.json).
-4. Edit the role briefs:
+1. Copy this repo or create a new repo from it.
+2. Edit [AGENTS.md](./AGENTS.md) to describe the project rules.
+3. Edit [.openclaw/project.json](./.openclaw/project.json) to set the project name and timing.
+4. Edit the two role files:
    - [.openclaw/roles/agent-a.md](./.openclaw/roles/agent-a.md)
    - [.openclaw/roles/agent-b.md](./.openclaw/roles/agent-b.md)
-5. Run:
+5. Run these commands:
 
 ```bash
 bash scripts/openclaw/setup-project-agents.sh
 bash scripts/openclaw/start-supervisor-tmux.sh
 ```
 
-Manual dispatch:
+If you want to send work manually:
 
 ```bash
 bash scripts/openclaw/dispatch-primary.sh "Review the repo and take the next safe task."
 bash scripts/openclaw/dispatch-secondary.sh "Improve the next clear part of the product."
 ```
 
-## Operating Commands
+## Useful Commands
 
 ```bash
 npm run agents:setup
@@ -68,29 +62,26 @@ npm run agents:supervisor:stop
 
 ## Global Bootstrap
 
-This repo also includes an optional global bootstrap layer.
+This repo also includes an optional global setup step.
 
-Use it when you want one reusable command that creates new repos from this template while keeping actual agent behavior local to each project.
+Use it if you want one reusable command that creates new project folders from this template.
 
-Install it:
+Install it once:
 
 ```bash
 bash scripts/bootstrap/install-global.sh
 ```
 
-Then create a new project:
+Then you can create a new project with:
 
 ```bash
 new-agent-flow my-project
 ```
 
-## File Map
+## Folder Guide
 
-- [.openclaw/project.json](./.openclaw/project.json): project and agent config
-- [.openclaw/roles/](./.openclaw/roles): role briefs
-- [scripts/bootstrap/](./scripts/bootstrap): optional machine-level bootstrap layer
-- [scripts/openclaw/](./scripts/openclaw): setup, dispatch, and supervisor scripts
-- [docs/quickstart.md](./docs/quickstart.md): practical setup guide
-- [docs/global-setup.md](./docs/global-setup.md): how to install the global bootstrap layer
-- [docs/customization.md](./docs/customization.md): how to adapt for a real repo
-- [docs/architecture.md](./docs/architecture.md): runtime design
+- [.openclaw/project.json](./.openclaw/project.json): the main project settings
+- [.openclaw/roles/](./.openclaw/roles): what each agent is supposed to do
+- [scripts/openclaw/](./scripts/openclaw): the main workflow scripts
+- [scripts/bootstrap/](./scripts/bootstrap): optional machine-wide setup scripts
+- [docs/](./docs): guides and examples

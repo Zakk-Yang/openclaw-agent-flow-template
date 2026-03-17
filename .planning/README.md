@@ -1,12 +1,12 @@
 # .planning
 
-This folder gives the template a lightweight GSD-friendly project memory.
+This folder is the project memory.
 
-Files here describe:
+It keeps short notes about:
 
-- what the template is for
-- what the requirements are
-- the rough roadmap
-- current state
+- what the project is trying to do
+- what is required
+- what the roadmap looks like
+- what the current state is
 
-In a real project, this folder is where milestone and phase planning can grow over time.
+In a real project, this folder can grow into a fuller planning history.

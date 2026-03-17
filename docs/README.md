@@ -1,11 +1,11 @@
 # docs
 
-This folder explains how to use and adapt the template.
+This folder explains the template in normal reading form.
 
-Start here if you want to understand:
+Come here when you want to understand:
 
-- how the architecture works
-- how the global bootstrap layer works
-- how to customize the starter
-- how to operate it safely
+- how the workflow works
+- how to change it for your own project
+- how the optional global setup works
+- what safe use looks like
 - what example setups look like

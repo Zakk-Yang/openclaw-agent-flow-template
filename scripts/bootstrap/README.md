@@ -1,11 +1,13 @@
 # bootstrap scripts
 
-This folder contains the optional machine-level bootstrap layer.
+This folder contains the optional setup for your whole machine.
 
-Use it when you want:
+Use it if you want:
 
-- one global command to create new repos from the template
-- one reusable prompt file in a stable user location
-- a clean split between global platform setup and local project behavior
+- one command that creates new projects from this template
+- one prompt file kept in the same place every time
+- a clean split between machine-wide setup and project-specific setup
 
-Keep the actual agent roles, allowed paths, and runtime state inside each project repo.
+Important:
+
+The real project rules should still live inside each project repo.

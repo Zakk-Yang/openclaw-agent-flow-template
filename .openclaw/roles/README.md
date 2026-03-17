@@ -1,11 +1,11 @@
 # roles
 
-This folder contains the role briefs for the two starter agents.
+This folder contains the job descriptions for the agents.
 
 Each file should explain:
 
-- the agent's mission
-- the kinds of tasks it should pick
-- what it should avoid
+- what the agent is responsible for
+- what kind of tasks it should take
+- what it should stay away from
 
-These files are versioned in the repo so the agent behavior is not hidden in a machine-local setup.
+Keeping these files in the repo makes the agent behavior easy to read and easy to share.

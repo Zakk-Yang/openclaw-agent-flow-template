@@ -1,15 +1,15 @@
 # openclaw scripts
 
-This folder contains the working shell scripts for the agent flow.
+This folder contains the main scripts for the agent workflow.
 
-Main pieces:
+The most important files are:
 
-- `setup-project-agents.sh`: register or refresh project agents
-- `dispatch-agent.sh`: shared dispatch wrapper
-- `dispatch-primary.sh` and `dispatch-secondary.sh`: sample manual entrypoints
-- `supervisor.sh`: one-shot decision engine
-- `heartbeat-loop.sh`: repeating loop that calls the supervisor
-- `start-supervisor-tmux.sh`, `stop-supervisor-tmux.sh`, `supervisor-status.sh`: runtime controls
-- `config.cjs`: reads `.openclaw/project.json`
+- `setup-project-agents.sh`: creates or refreshes the agents
+- `dispatch-agent.sh`: sends work to an agent
+- `dispatch-primary.sh` and `dispatch-secondary.sh`: easy manual commands
+- `supervisor.sh`: decides whether to send work
+- `heartbeat-loop.sh`: repeats the check every few minutes
+- `start-supervisor-tmux.sh`, `stop-supervisor-tmux.sh`, `supervisor-status.sh`: start, stop, and inspect the loop
+- `config.cjs`: reads the project settings file
 
-If you want to change orchestration behavior, this is the first folder to inspect.
+If you want to change how the workflow behaves, start here.
