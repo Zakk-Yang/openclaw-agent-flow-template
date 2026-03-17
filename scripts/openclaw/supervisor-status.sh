@@ -6,6 +6,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CONFIG_SCRIPT="$ROOT_DIR/scripts/openclaw/config.cjs"
 SESSION_NAME="${SUPERVISOR_TMUX_SESSION:-$(node "$CONFIG_SCRIPT" project tmux_session)}"
 STATE_FILE="$ROOT_DIR/.openclaw/runtime/supervisor-state.json"
+LANE_STATE_FILE="$ROOT_DIR/.openclaw/runtime/lane-state.json"
 LOG_FILE="$ROOT_DIR/.openclaw/runtime/supervisor.log"
 DISPATCH_HISTORY_FILE="$ROOT_DIR/.openclaw/runtime/dispatch-history.jsonl"
 
@@ -29,6 +30,24 @@ else
   printf '\nRecent log: missing\n'
 fi
 
+if [ -f "$LANE_STATE_FILE" ]; then
+  printf '\nLane state:\n'
+  node -e '
+    const fs = require("fs");
+    const payload = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    for (const role of ["primary", "secondary"]) {
+      const lane = payload[role];
+      if (!lane) continue;
+      console.log(`- ${role}: status=${lane.status || "unknown"} session=${lane.sessionId || "none"} rollovers=${lane.rolloverCount || 0}`);
+      if (lane.goal) console.log(`  goal: ${lane.goal}`);
+      if (lane.next) console.log(`  next: ${lane.next}`);
+      if (lane.handoffFile) console.log(`  handoff: ${lane.handoffFile}`);
+    }
+  ' "$LANE_STATE_FILE"
+else
+  printf '\nLane state: missing\n'
+fi
+
 if [ -f "$DISPATCH_HISTORY_FILE" ]; then
   printf '\nRecent dispatch history:\n'
   node -e '
@@ -38,13 +57,12 @@ if [ -f "$DISPATCH_HISTORY_FILE" ]; then
     for (const line of lines) {
       const entry = JSON.parse(line);
       const changed = Array.isArray(entry.changedPaths) ? entry.changedPaths : [];
-      console.log(`- ${entry.dispatchedAtIso} role=${entry.role} exit=${entry.exitCode} changed=${changed.length}`);
+      console.log(`- ${entry.dispatchedAtIso} role=${entry.role} exit=${entry.exitCode} status=${entry.status || "unknown"} changed=${changed.length} rollover=${entry.rolledOverSession ? "yes" : "no"}`);
       if (changed.length > 0) {
         console.log(`  files: ${changed.join(", ")}`);
       }
-      if (entry.outputExcerpt) {
-        console.log(`  summary: ${entry.outputExcerpt.split("\n")[0]}`);
-      }
+      if (entry.goal) console.log(`  goal: ${entry.goal}`);
+      if (entry.nextSummary) console.log(`  next: ${entry.nextSummary}`);
     }
   ' "$DISPATCH_HISTORY_FILE"
 else

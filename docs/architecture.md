@@ -33,6 +33,21 @@ That record is meant to answer:
 
 This makes the system easier to evaluate without requiring a git commit on every heartbeat.
 
+## Compact Reports And Handoffs
+
+Each automated run should end with a short final block such as:
+
+- `STATUS`
+- `GOAL`
+- `CHANGED`
+- `VERIFIED`
+- `NEXT`
+- `HANDOFF`
+
+That gives the supervisor a compact summary it can record without depending on the full chat transcript.
+
+The supervisor can then write one handoff file per lane under `.openclaw/runtime/`, which becomes the seed context for any future fresh session.
+
 ## Stop Conditions
 
 Diff-only dispatch decides when a lane is eligible to run.
@@ -50,6 +65,19 @@ Then the supervisor or operator can stop redispatching lanes that are already do
 
 Without this, the loop can waste time on repeated no-op audits or repeated retries against the same blocker.
 
+## Context Rollover
+
+Long-running lanes also need a context limit strategy.
+
+Best practice:
+
+1. let the agent finish with a concise final report
+2. let the supervisor store that as the lane handoff
+3. when the current session gets too large, start a fresh session
+4. continue from the handoff instead of carrying the whole old thread forward
+
+That keeps the workflow iterative without slowly degrading the quality of the agent context.
+
 ## Hooks Vs Supervisor
 
 OpenClaw hooks are useful, but they should usually not be the main controller for this pattern.
@@ -59,6 +87,7 @@ Best practice:
 - **supervisor** owns dispatch decisions
 - **agent prompts** require the run to end with a status
 - **agent output** reports `continue`, `done`, `blocked`, or `defer`
+- **supervisor** also owns context rollover into a fresh session when needed
 - **hooks** handle side effects such as:
   - writing summaries
   - saving memory

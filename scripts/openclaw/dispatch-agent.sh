@@ -46,6 +46,16 @@ ${ROLE_BRIEF}
 <user_task>
 ${USER_TASK}
 </user_task>
+
+When you finish, end with this exact compact report block:
+STATUS: continue|done|blocked|defer
+GOAL: one short sentence
+CHANGED: one short sentence, or none
+VERIFIED: one short sentence, or none
+NEXT: one short sentence, or none
+HANDOFF: one short sentence another fresh session could continue from
+
+Keep each field brief and concrete.
 EOF
 )
 

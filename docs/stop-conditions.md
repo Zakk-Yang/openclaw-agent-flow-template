@@ -99,6 +99,7 @@ Ask agents to finish every run with:
 
 - what changed
 - what was verified
+- one short handoff sentence for the next fresh session
 - one final status:
   - `continue`
   - `done`
@@ -107,6 +108,21 @@ Ask agents to finish every run with:
 - one sentence explaining why
 
 This prompt contract is what lets the supervisor make sane dispatch decisions later.
+
+## Context Saturation
+
+There is one more stop-related problem to solve in long-running loops:
+
+- even a useful lane eventually fills its chat context
+
+So a healthy loop should also:
+
+1. keep the final report compact
+2. store that report in a lane handoff file
+3. rotate to a fresh session when the current thread gets too large
+4. continue from the handoff instead of reusing the saturated session
+
+This is how you keep the workflow automated without letting "100% context used" quietly break quality.
 
 ## Practical Outcome
 

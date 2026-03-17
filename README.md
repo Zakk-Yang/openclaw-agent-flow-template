@@ -19,6 +19,7 @@ One important best practice is easy to miss:
 - the loop also needs a stopping rule
 - agents should not keep getting redispatched forever just because the repo is idle
 - each run should end with a simple status such as `continue`, `done`, `blocked`, or `defer`
+- the loop also needs automatic session rollover before an agent thread gets too full to stay reliable
 
 ## 30-Second Quickstart
 
@@ -55,6 +56,7 @@ This repo gives you:
 - a background loop that can wake up and send work automatically
 - a per-dispatch summary trail so you can review what each run did without committing every few minutes
 - a clear best-practice pattern for deciding when an agent should stop instead of looping forever
+- automatic fresh-session rollover using a short handoff file when a lane thread gets too large
 
 You can copy this repo into a real project and edit it there.
 
@@ -91,6 +93,8 @@ The best-practice version is:
 - dispatch work
 - require the agent to say whether it should `continue`, is `done`, is `blocked`, or should `defer`
 - stop redispatching lanes that are done or blocked until new input arrives
+- keep the final report concise enough that the supervisor can write a reusable handoff
+- when a lane thread gets too large, start a fresh session and seed it from that handoff
 
 ## In Plain English
 
@@ -123,6 +127,7 @@ The best practice is:
 - OpenClaw decides when to ask again
 - the agent decides whether real work remains
 - the repo records that status so the loop knows when to stop
+- the supervisor rotates a lane into a fresh session before context saturation hurts quality
 
 If you choose to use OpenClaw hooks, the cleanest role for them is:
 
@@ -192,6 +197,19 @@ This template works best when every dispatched task ends with one of four simple
 Without this, a heartbeat loop can waste tokens on repeated low-value audit or no-op turns.
 
 For the fuller explanation, see [docs/stop-conditions.md](./docs/stop-conditions.md).
+
+## Context Rollover
+
+Long-running lanes should not stay in one chat forever.
+
+This template now treats "the thread is too full" as its own automation problem:
+
+- every run ends with a short report block
+- the supervisor turns that into a lane handoff file
+- if the current lane session grows too large, the supervisor starts a fresh session
+- the new session continues from the handoff instead of dragging the full old thread forward
+
+That keeps the loop iterative without letting context saturation quietly reduce quality.
 
 ## When Not To Use This Template
 
