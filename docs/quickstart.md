@@ -35,3 +35,9 @@ bash scripts/openclaw/supervisor-status.sh
 ```
 
 Runtime files live under `.openclaw/runtime/`.
+
+Important ones:
+
+- `supervisor-state.json`
+- `supervisor.log`
+- `dispatch-history.jsonl`

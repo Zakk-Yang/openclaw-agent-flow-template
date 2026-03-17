@@ -17,6 +17,22 @@ The supervisor:
 
 It does not suppress dispatch just because an agent session timestamp changed.
 
+## Dispatch History
+
+Each dispatch also writes a small summary record to:
+
+- `.openclaw/runtime/dispatch-history.jsonl`
+
+That record is meant to answer:
+
+- when was an agent dispatched
+- which role was chosen
+- whether the run exited cleanly
+- which files changed in that role's scope
+- what short summary came back from the run
+
+This makes the system easier to evaluate without requiring a git commit on every heartbeat.
+
 ## Why This Shape
 
 - easy to inspect

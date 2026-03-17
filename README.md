@@ -20,6 +20,7 @@ This repo gives you:
 - a place to describe what each agent should do
 - scripts to start and check the workflow
 - a background loop that can wake up and send work automatically
+- a per-dispatch summary trail so you can review what each run did without committing every few minutes
 
 You can copy this repo into a real project and edit it there.
 

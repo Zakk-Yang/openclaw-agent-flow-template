@@ -13,3 +13,5 @@ The most important files are:
 - `config.cjs`: reads the project settings file
 
 If you want to change how the workflow behaves, start here.
+
+When the supervisor dispatches work, it also writes a small summary record under `.openclaw/runtime/dispatch-history.jsonl`.

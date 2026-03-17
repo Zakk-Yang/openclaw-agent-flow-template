@@ -6,6 +6,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CONFIG_SCRIPT="$ROOT_DIR/scripts/openclaw/config.cjs"
 RUNTIME_DIR="$ROOT_DIR/.openclaw/runtime"
 STATE_FILE="$RUNTIME_DIR/supervisor-state.json"
+DISPATCH_HISTORY_FILE="$RUNTIME_DIR/dispatch-history.jsonl"
 OPENCLAW_HOME="${OPENCLAW_HOME:-$HOME/.openclaw}"
 
 INTERVAL_SECONDS="${SUPERVISOR_INTERVAL_SECONDS:-$(node "$CONFIG_SCRIPT" project heartbeat_interval_seconds)}"
@@ -27,6 +28,56 @@ hash_status() {
 
 path_status() {
   git status --porcelain --untracked-files=all -- "$@" 2>/dev/null || true
+}
+
+status_diff_paths_json() {
+  local before_status="$1"
+  local after_status="$2"
+
+  node -e '
+    const before = new Set((process.argv[1] || "").split("\n").filter(Boolean));
+    const after = (process.argv[2] || "").split("\n").filter(Boolean);
+    const paths = [];
+
+    for (const line of after) {
+      if (before.has(line)) continue;
+      const match = line.match(/^.. (.+)$/);
+      if (!match) continue;
+      const rawPath = match[1];
+      const normalized = rawPath.includes(" -> ") ? rawPath.split(" -> ").pop() : rawPath;
+      if (!paths.includes(normalized)) paths.push(normalized);
+    }
+
+    process.stdout.write(JSON.stringify(paths));
+  ' "$before_status" "$after_status"
+}
+
+append_dispatch_history() {
+  local dispatched_at_ms="$1"
+  local dispatched_at_iso="$2"
+  local role="$3"
+  local exit_code="$4"
+  local prompt="$5"
+  local changed_paths_json="$6"
+  local output_text="$7"
+
+  node -e '
+    const fs = require("fs");
+    const path = process.argv[1];
+    const changedPaths = JSON.parse(process.argv[2]);
+    const outputText = process.argv[3] || "";
+    const prompt = process.argv[4] || "";
+    const payload = {
+      dispatchedAtMs: Number(process.argv[5]),
+      dispatchedAtIso: process.argv[6],
+      role: process.argv[7],
+      exitCode: Number(process.argv[8]),
+      changedPaths,
+      prompt,
+      outputExcerpt: outputText.split("\n").filter(Boolean).slice(-20).join("\n")
+    };
+    fs.appendFileSync(path, JSON.stringify(payload) + "\n", "utf8");
+  ' "$DISPATCH_HISTORY_FILE" "$changed_paths_json" "$output_text" "$prompt" "$dispatched_at_ms" "$dispatched_at_iso" "$role" "$exit_code"
 }
 
 latest_session_updated_at() {
@@ -201,11 +252,25 @@ PRIMARY_AGE_MS=$((NOW_MS - PRIMARY_SESSION_UPDATED_AT))
 SECONDARY_AGE_MS=$((NOW_MS - SECONDARY_SESSION_UPDATED_AT))
 ROLE_TO_DISPATCH="$(pick_role "$PREV_LAST_DISPATCHED_ROLE" "$PRIMARY_AGE_MS" "$SECONDARY_AGE_MS")"
 PROMPT="$(node "$CONFIG_SCRIPT" agent "$ROLE_TO_DISPATCH" idle_prompt)"
+if [ "$ROLE_TO_DISPATCH" = "primary" ]; then
+  ROLE_STATUS_BEFORE="$PRIMARY_STATUS"
+else
+  ROLE_STATUS_BEFORE="$SECONDARY_STATUS"
+fi
 
 set +e
 DISPATCH_OUTPUT="$(dispatch_role "$ROLE_TO_DISPATCH" "$PROMPT" 2>&1)"
 DISPATCH_EXIT_CODE=$?
 set -e
+
+if [ "$ROLE_TO_DISPATCH" = "primary" ]; then
+  ROLE_STATUS_AFTER="$(path_status "${PRIMARY_PATHS[@]}")"
+else
+  ROLE_STATUS_AFTER="$(path_status "${SECONDARY_PATHS[@]}")"
+fi
+
+CHANGED_PATHS_JSON="$(status_diff_paths_json "$ROLE_STATUS_BEFORE" "$ROLE_STATUS_AFTER")"
+append_dispatch_history "$NOW_MS" "$NOW_ISO" "$ROLE_TO_DISPATCH" "$DISPATCH_EXIT_CODE" "$PROMPT" "$CHANGED_PATHS_JSON" "$DISPATCH_OUTPUT"
 
 if [ "$DISPATCH_EXIT_CODE" -eq 0 ]; then
   NEW_DISPATCH_COUNT=$((PREV_DISPATCH_COUNT + 1))
