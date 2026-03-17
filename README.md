@@ -1,8 +1,10 @@
 # OpenClaw Agent Flow Template
 
-A simple starter for people who want OpenClaw to orchestrate two AI agents inside one project.
+A simple starter for people who want OpenClaw to orchestrate `n` AI agents inside one project.
 
-The main idea of this project is not just "two agents exist."
+This repo ships with a simple two-agent example so it is easy to understand and easy to try first.
+
+The main idea of this project is not just "a few agents exist."
 
 The important part is this:
 
@@ -25,15 +27,37 @@ If you want one copy-paste instruction for Codex or another coding agent, use [p
 
 If you want one machine-wide command that creates new projects from this template, see [docs/global-setup.md](./docs/global-setup.md).
 
+## Process Flow
+
+```mermaid
+flowchart TD
+    A[OpenClaw Orchestrator] --> B[Heartbeat Loop in tmux]
+    B --> C{Has repo diff/status changed?}
+    C -->|Yes| D[Wait and check again]
+    C -->|No for idle window| E[Choose next suitable agent]
+    E --> F[Dispatch task to one of n agents]
+    F --> G[Agent makes changes or reports blocker]
+    G --> H[Repo state changes]
+    H --> B
+```
+
+The key point is that OpenClaw keeps the work moving in a loop:
+
+- check the repo
+- decide whether it is idle
+- dispatch the next suitable agent
+- observe the result
+- repeat
+
 ## In Plain English
 
 This template follows a simple idea:
 
 1. OpenClaw runs on your machine.
 2. OpenClaw is the orchestrator for the agent flow.
-3. This repo keeps the project rules and agent roles.
+3. This repo keeps the project rules and the agent roles.
 4. A background loop checks the project every 5 minutes.
-5. If nothing changed for 5 minutes, it sends the next task to one agent.
+5. If nothing changed for 5 minutes, it sends the next task to a suitable agent.
 6. If the project changed, it waits, then checks again.
 
 The default rule is `diff-only`, which means the workflow reacts to project file changes, not just agent chatter.
@@ -42,13 +66,14 @@ So the outstanding point of this template is:
 
 - OpenClaw is orchestrating an iterative agent workflow
 - not just launching isolated agent prompts
+- and that pattern can work with `n` specialized agents
 
 ## Fast Start
 
 1. Copy this repo or create a new repo from it.
 2. Edit [AGENTS.md](./AGENTS.md) to describe the project rules.
 3. Edit [.openclaw/project.json](./.openclaw/project.json) to set the project name and timing.
-4. Edit the two role files:
+4. Edit the starter role files:
    - [.openclaw/roles/agent-a.md](./.openclaw/roles/agent-a.md)
    - [.openclaw/roles/agent-b.md](./.openclaw/roles/agent-b.md)
 5. Run these commands:

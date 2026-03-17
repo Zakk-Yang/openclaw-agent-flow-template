@@ -7,6 +7,9 @@ Project goal:
 - <PROJECT_GOAL>
 
 Agents:
+- This pattern should support n specialized agents.
+- Start with at least two concrete roles.
+
 - Agent A should do: <AGENT_A_MISSION>
 - Agent A allowed areas: <AGENT_A_ALLOWED_PATHS>
 - Agent A should avoid: <AGENT_A_AVOID_PATHS>
@@ -15,9 +18,14 @@ Agents:
 - Agent B allowed areas: <AGENT_B_ALLOWED_PATHS>
 - Agent B should avoid: <AGENT_B_AVOID_PATHS>
 
+- Optional additional agents:
+- Agent C should do: <OPTIONAL_AGENT_C_MISSION>
+- Agent D should do: <OPTIONAL_AGENT_D_MISSION>
+
 Requirements:
 - Use OpenClaw as the orchestrator.
-- Use exactly two project-local agents.
+- Use project-local agents.
+- The repo may start with two example agents, but the orchestration pattern should support n agents.
 - Use heartbeat + tmux + shell scripts + GSD only.
 - Do not use cron.
 - Make the setup project-local, idempotent, and easy to understand.
