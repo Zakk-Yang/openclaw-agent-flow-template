@@ -33,6 +33,25 @@ That record is meant to answer:
 
 This makes the system easier to evaluate without requiring a git commit on every heartbeat.
 
+## Stop Conditions
+
+Diff-only dispatch decides when a lane is eligible to run.
+
+That is not the same as deciding whether a lane should keep running.
+
+Best practice is to require every agent run to finish with one of:
+
+- `continue`
+- `done`
+- `blocked`
+- `defer`
+
+Then the supervisor or operator can stop redispatching lanes that are already done, blocked, or not worth another cycle yet.
+
+Without this, the loop can waste time on repeated no-op audits or repeated retries against the same blocker.
+
+See [stop-conditions.md](./stop-conditions.md).
+
 ## Why This Shape
 
 - easy to inspect

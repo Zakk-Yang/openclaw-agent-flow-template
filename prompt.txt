@@ -37,11 +37,15 @@ Dispatch policy:
 - If repo diff/status has not changed for 5 minutes, dispatch one agent.
 - If repo diff/status changed, do not dispatch.
 - Do not let agent session timestamp noise suppress dispatch.
+- Build in explicit stop conditions so the loop knows when to stop.
+- Each agent run should end with one of: continue, done, blocked, or defer.
+- Do not keep redispatching a lane forever just because the repo is idle.
 
 Verification:
 - Verify both agents can be dispatched manually.
 - Verify the supervisor runs in tmux.
 - Verify idle repo -> automatic dispatch.
+- Verify the stop-condition pattern is documented and easy to apply.
 - Show the commands needed to operate the system.
 
 Use GSD discipline, preferably gsd-quick unless a full phase is clearly needed.

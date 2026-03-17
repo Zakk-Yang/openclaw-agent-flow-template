@@ -15,3 +15,9 @@ The most important files are:
 If you want to change how the workflow behaves, start here.
 
 When the supervisor dispatches work, it also writes a small summary record under `.openclaw/runtime/dispatch-history.jsonl`.
+
+Best practice:
+
+- do not let the loop run forever just because the repo is idle
+- ask each agent run to end with a status like `continue`, `done`, `blocked`, or `defer`
+- use that status to decide whether the same lane should be dispatched again

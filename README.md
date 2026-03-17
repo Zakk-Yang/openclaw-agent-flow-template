@@ -14,6 +14,12 @@ The important part is this:
 - when the repo changes, it waits and checks again
 - this creates an iterative work loop instead of one-off agent calls
 
+One important best practice is easy to miss:
+
+- the loop also needs a stopping rule
+- agents should not keep getting redispatched forever just because the repo is idle
+- each run should end with a simple status such as `continue`, `done`, `blocked`, or `defer`
+
 ## 30-Second Quickstart
 
 If you already understand the idea, this is the shortest path to seeing it work:
@@ -48,6 +54,7 @@ This repo gives you:
 - scripts to start and check the workflow
 - a background loop that can wake up and send work automatically
 - a per-dispatch summary trail so you can review what each run did without committing every few minutes
+- a clear best-practice pattern for deciding when an agent should stop instead of looping forever
 
 You can copy this repo into a real project and edit it there.
 
@@ -77,6 +84,14 @@ The key point is that OpenClaw keeps the work moving in a loop:
 - observe the result
 - repeat
 
+But the repeat step should not be blind.
+
+The best-practice version is:
+
+- dispatch work
+- require the agent to say whether it should `continue`, is `done`, is `blocked`, or should `defer`
+- stop redispatching lanes that are done or blocked until new input arrives
+
 ## In Plain English
 
 This template follows a simple idea:
@@ -88,6 +103,13 @@ This template follows a simple idea:
 5. If nothing changed for 5 minutes, it sends the next task to a suitable agent.
 6. If the project changed, it waits, then checks again.
 
+To keep this from becoming a noisy infinite loop, each agent run should also answer:
+
+- should this lane continue?
+- is it done for now?
+- is it blocked?
+- should it be deferred?
+
 The default rule is `diff-only`, which means the workflow reacts to project file changes, not just agent chatter.
 
 So the main point of this template is:
@@ -95,6 +117,12 @@ So the main point of this template is:
 - OpenClaw is orchestrating an iterative agent workflow
 - not just launching isolated agent prompts
 - and that pattern can work with `n` specialized agents
+
+The best practice is:
+
+- OpenClaw decides when to ask again
+- the agent decides whether real work remains
+- the repo records that status so the loop knows when to stop
 
 ## Starter Layouts
 
@@ -146,6 +174,19 @@ npm run agents:supervisor:start
 npm run agents:supervisor:status
 npm run agents:supervisor:stop
 ```
+
+## Stop Conditions
+
+This template works best when every dispatched task ends with one of four simple statuses:
+
+- `continue`: there is a clear next bounded step
+- `done`: the goal for this lane is complete for now
+- `blocked`: the lane cannot continue without a new source, credential, decision, or schema change
+- `defer`: more work is possible later, but not worth spending another cycle right now
+
+Without this, a heartbeat loop can waste tokens on repeated low-value audit or no-op turns.
+
+For the fuller explanation, see [docs/stop-conditions.md](./docs/stop-conditions.md).
 
 ## When Not To Use This Template
 
