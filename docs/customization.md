@@ -26,6 +26,8 @@ Then update their config entries:
 
 This template is meant to support `n` specialized agents, not only the starter pair.
 
+The supervisor and status scripts read the `agents` array dynamically, so adding more lanes is a configuration change, not a script rewrite.
+
 To add another agent:
 
 1. create a new role file under `.openclaw/roles/`

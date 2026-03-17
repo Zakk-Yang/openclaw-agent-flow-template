@@ -48,6 +48,16 @@ while IFS= read -r key; do
 done < <(node "$CONFIG_SCRIPT" agent-keys)
 
 printf '\nDispatch commands:\n'
-printf '  bash scripts/openclaw/dispatch-primary.sh "your task"\n'
-printf '  bash scripts/openclaw/dispatch-secondary.sh "your task"\n'
 printf '  bash scripts/openclaw/dispatch-agent.sh <agent-key> "your task"\n'
+while IFS= read -r key; do
+  [ -n "$key" ] || continue
+  printf '  bash scripts/openclaw/dispatch-agent.sh %s "your task"\n' "$key"
+done < <(node "$CONFIG_SCRIPT" agent-keys)
+
+if node "$CONFIG_SCRIPT" agent primary role_label >/dev/null 2>&1; then
+  printf '  bash scripts/openclaw/dispatch-primary.sh "your task"\n'
+fi
+
+if node "$CONFIG_SCRIPT" agent secondary role_label >/dev/null 2>&1; then
+  printf '  bash scripts/openclaw/dispatch-secondary.sh "your task"\n'
+fi

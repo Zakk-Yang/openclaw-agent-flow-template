@@ -2,6 +2,8 @@
 
 This is the shortest reliable path from clone to first automatic dispatch.
 
+The template starts with a two-agent example, but the supervisor will read any number of agents from `.openclaw/project.json`.
+
 ## 30-Second Version
 
 ```bash
@@ -93,7 +95,7 @@ That is the core behavior this template is trying to give you.
 
 ## Add A Third Agent Later
 
-When you want to move beyond the starter pair:
+When you want to move beyond the starter pair, the same supervisor keeps working:
 
 1. create another role brief, for example `.openclaw/roles/agent-c.md`
 2. add another agent entry to `.openclaw/project.json`

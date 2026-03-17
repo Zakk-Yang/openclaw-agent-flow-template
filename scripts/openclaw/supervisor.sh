@@ -67,19 +67,31 @@ read_state_json() {
   ' "$STATE_FILE" "$field"
 }
 
+read_state_object_json() {
+  local field="$1"
+  node -e '
+    const fs = require("fs");
+    const path = process.argv[1];
+    const field = process.argv[2];
+    if (!fs.existsSync(path)) process.exit(0);
+    const payload = JSON.parse(fs.readFileSync(path, "utf8"));
+    const value = payload[field];
+    if (value === undefined || value === null) process.exit(0);
+    process.stdout.write(JSON.stringify(value));
+  ' "$STATE_FILE" "$field"
+}
+
 write_state_json() {
   local now_ms="$1"
   local now_iso="$2"
-  local primary_signature="$3"
-  local secondary_signature="$4"
-  local primary_updated_at="$5"
-  local secondary_updated_at="$6"
-  local last_activity_at="$7"
-  local last_dispatch_at="$8"
-  local last_dispatched_role="$9"
-  local dispatch_count="${10}"
-  local decision="${11}"
-  local reason="${12}"
+  local signatures_json="$3"
+  local session_updated_json="$4"
+  local last_activity_at="$5"
+  local last_dispatch_at="$6"
+  local last_dispatched_role="$7"
+  local dispatch_count="$8"
+  local decision="$9"
+  local reason="${10}"
 
   node -e '
     const fs = require("fs");
@@ -87,19 +99,17 @@ write_state_json() {
     const payload = {
       updatedAtMs: Number(process.argv[2]),
       updatedAtIso: process.argv[3],
-      primarySignature: process.argv[4],
-      secondarySignature: process.argv[5],
-      primarySessionUpdatedAt: Number(process.argv[6]),
-      secondarySessionUpdatedAt: Number(process.argv[7]),
-      lastActivityAt: Number(process.argv[8]),
-      lastDispatchAt: Number(process.argv[9]),
-      lastDispatchedRole: process.argv[10],
-      dispatchCount: Number(process.argv[11]),
-      lastDecision: process.argv[12],
-      lastReason: process.argv[13]
+      signatures: JSON.parse(process.argv[4]),
+      sessionUpdatedAt: JSON.parse(process.argv[5]),
+      lastActivityAt: Number(process.argv[6]),
+      lastDispatchAt: Number(process.argv[7]),
+      lastDispatchedRole: process.argv[8],
+      dispatchCount: Number(process.argv[9]),
+      lastDecision: process.argv[10],
+      lastReason: process.argv[11]
     };
     fs.writeFileSync(path, JSON.stringify(payload, null, 2) + "\n", "utf8");
-  ' "$STATE_FILE" "$now_ms" "$now_iso" "$primary_signature" "$secondary_signature" "$primary_updated_at" "$secondary_updated_at" "$last_activity_at" "$last_dispatch_at" "$last_dispatched_role" "$dispatch_count" "$decision" "$reason"
+  ' "$STATE_FILE" "$now_ms" "$now_iso" "$signatures_json" "$session_updated_json" "$last_activity_at" "$last_dispatch_at" "$last_dispatched_role" "$dispatch_count" "$decision" "$reason"
 }
 
 read_lane_json() {
@@ -271,43 +281,67 @@ append_dispatch_history() {
   ' "$DISPATCH_HISTORY_FILE" "$changed_paths_json" "$report_json" "$output_text" "$prompt" "$dispatched_at_ms" "$dispatched_at_iso" "$role" "$exit_code" "$session_id"
 }
 
+json_from_role_map() {
+  local map_name="$1"
+  declare -n role_map="$map_name"
+  local pairs=()
+  local role
+  for role in "${ROLE_KEYS[@]}"; do
+    pairs+=("${role}"$'\t'"${role_map[$role]-}")
+  done
+
+  node -e '
+    const obj = {};
+    for (const pair of process.argv.slice(1)) {
+      const tabIndex = pair.indexOf("\t");
+      if (tabIndex === -1) {
+        obj[pair] = "";
+        continue;
+      }
+      const key = pair.slice(0, tabIndex);
+      const value = pair.slice(tabIndex + 1);
+      obj[key] = value;
+    }
+    process.stdout.write(JSON.stringify(obj));
+  ' "${pairs[@]}"
+}
+
 pick_role() {
   local previous_role="$1"
-  local primary_age_ms="$2"
-  local secondary_age_ms="$3"
-  local primary_terminal="$4"
-  local secondary_terminal="$5"
+  local ages_json="$2"
+  local terminals_json="$3"
 
-  if [ "$primary_terminal" = "1" ] && [ "$secondary_terminal" = "1" ]; then
-    printf 'none'
-    return
-  fi
+  node -e '
+    const roles = (process.argv[1] || "").split("\n").filter(Boolean);
+    const previousRole = process.argv[2] || "";
+    const ages = JSON.parse(process.argv[3]);
+    const terminals = JSON.parse(process.argv[4]);
+    const available = roles.filter((role) => String(terminals[role] || "0") !== "1");
 
-  if [ "$primary_terminal" = "1" ]; then
-    printf 'secondary'
-    return
-  fi
+    if (available.length === 0) {
+      process.stdout.write("none");
+      process.exit(0);
+    }
 
-  if [ "$secondary_terminal" = "1" ]; then
-    printf 'primary'
-    return
-  fi
+    const bestAge = available.reduce((best, role) => {
+      const age = Number(ages[role] || 0);
+      return age > best ? age : best;
+    }, Number.NEGATIVE_INFINITY);
 
-  if [ "$primary_age_ms" -gt "$secondary_age_ms" ]; then
-    printf 'primary'
-    return
-  fi
+    const top = available.filter((role) => Number(ages[role] || 0) === bestAge);
+    if (top.length === 1) {
+      process.stdout.write(top[0]);
+      process.exit(0);
+    }
 
-  if [ "$secondary_age_ms" -gt "$primary_age_ms" ]; then
-    printf 'secondary'
-    return
-  fi
+    const previousIndex = top.indexOf(previousRole);
+    if (previousIndex >= 0) {
+      process.stdout.write(top[(previousIndex + 1) % top.length]);
+      process.exit(0);
+    }
 
-  if [ "$previous_role" = "primary" ]; then
-    printf 'secondary'
-  else
-    printf 'primary'
-  fi
+    process.stdout.write(top[0]);
+  ' "$(printf '%s\n' "${ROLE_KEYS[@]}")" "$previous_role" "$ages_json" "$terminals_json"
 }
 
 dispatch_role() {
@@ -316,35 +350,54 @@ dispatch_role() {
   bash "$ROOT_DIR/scripts/openclaw/dispatch-agent.sh" "$role" "$prompt" --thinking high
 }
 
-PRIMARY_PATHS=()
-while IFS= read -r line; do
-  [ -n "$line" ] && PRIMARY_PATHS+=("$line")
-done < <(node "$CONFIG_SCRIPT" agent-paths primary)
+mapfile -t ROLE_KEYS < <(node "$CONFIG_SCRIPT" agent-keys)
+if [ "${#ROLE_KEYS[@]}" -eq 0 ]; then
+  printf 'No agents configured in .openclaw/project.json\n' >&2
+  exit 1
+fi
 
-SECONDARY_PATHS=()
-while IFS= read -r line; do
-  [ -n "$line" ] && SECONDARY_PATHS+=("$line")
-done < <(node "$CONFIG_SCRIPT" agent-paths secondary)
+declare -A STATUS_BY_ROLE=()
+declare -A SIGNATURE_BY_ROLE=()
+declare -A AGENT_ID_BY_ROLE=()
+declare -A SESSION_UPDATED_BY_ROLE=()
+declare -A LANE_STATUS_BY_ROLE=()
+declare -A LANE_SIGNATURE_BY_ROLE=()
+declare -A TERMINAL_BY_ROLE=()
 
-PRIMARY_STATUS="$(path_status "${PRIMARY_PATHS[@]}")"
-SECONDARY_STATUS="$(path_status "${SECONDARY_PATHS[@]}")"
-PRIMARY_SIGNATURE="$(hash_status "$PRIMARY_STATUS")"
-SECONDARY_SIGNATURE="$(hash_status "$SECONDARY_STATUS")"
+for ROLE in "${ROLE_KEYS[@]}"; do
+  ROLE_PATHS=()
+  while IFS= read -r line; do
+    [ -n "$line" ] && ROLE_PATHS+=("$line")
+  done < <(node "$CONFIG_SCRIPT" agent-paths "$ROLE")
 
-PRIMARY_AGENT_ID="$(node "$CONFIG_SCRIPT" agent-id primary)"
-SECONDARY_AGENT_ID="$(node "$CONFIG_SCRIPT" agent-id secondary)"
+  STATUS_BY_ROLE["$ROLE"]="$(path_status "${ROLE_PATHS[@]}")"
+  SIGNATURE_BY_ROLE["$ROLE"]="$(hash_status "${STATUS_BY_ROLE[$ROLE]}")"
+  AGENT_ID_BY_ROLE["$ROLE"]="$(node "$CONFIG_SCRIPT" agent-id "$ROLE")"
 
-PRIMARY_SESSION_META="$(latest_session_meta_json "$OPENCLAW_HOME/agents/$PRIMARY_AGENT_ID/sessions/sessions.json")"
-SECONDARY_SESSION_META="$(latest_session_meta_json "$OPENCLAW_HOME/agents/$SECONDARY_AGENT_ID/sessions/sessions.json")"
+  SESSION_META="$(latest_session_meta_json "$OPENCLAW_HOME/agents/${AGENT_ID_BY_ROLE[$ROLE]}/sessions/sessions.json")"
+  SESSION_UPDATED_AT="$(json_field "$SESSION_META" updatedAt)"
+  SESSION_UPDATED_BY_ROLE["$ROLE"]="${SESSION_UPDATED_AT:-0}"
 
-PRIMARY_SESSION_UPDATED_AT="$(json_field "$PRIMARY_SESSION_META" updatedAt)"
-SECONDARY_SESSION_UPDATED_AT="$(json_field "$SECONDARY_SESSION_META" updatedAt)"
+  LANE_STATUS_BY_ROLE["$ROLE"]="$(read_lane_json "$ROLE" status)"
+  LANE_SIGNATURE_BY_ROLE["$ROLE"]="$(read_lane_json "$ROLE" signature)"
+
+  TERMINAL_BY_ROLE["$ROLE"]="0"
+  case "${LANE_STATUS_BY_ROLE[$ROLE]:-}" in
+    done|blocked|defer)
+      if [ "${LANE_SIGNATURE_BY_ROLE[$ROLE]:-}" = "${SIGNATURE_BY_ROLE[$ROLE]}" ]; then
+        TERMINAL_BY_ROLE["$ROLE"]="1"
+      fi
+      ;;
+  esac
+done
+
+CURRENT_SIGNATURES_JSON="$(json_from_role_map SIGNATURE_BY_ROLE)"
+CURRENT_SESSIONS_JSON="$(json_from_role_map SESSION_UPDATED_BY_ROLE)"
 
 NOW_MS="$(node -e 'process.stdout.write(String(Date.now()))')"
 NOW_ISO="$(timestamp)"
 
-PREV_PRIMARY_SIGNATURE="$(read_state_json primarySignature)"
-PREV_SECONDARY_SIGNATURE="$(read_state_json secondarySignature)"
+PREV_SIGNATURES_JSON="$(read_state_object_json signatures)"
 PREV_LAST_ACTIVITY_AT="$(read_state_json lastActivityAt)"
 PREV_LAST_DISPATCH_AT="$(read_state_json lastDispatchAt)"
 PREV_LAST_DISPATCHED_ROLE="$(read_state_json lastDispatchedRole)"
@@ -355,43 +408,25 @@ PREV_LAST_DISPATCH_AT="${PREV_LAST_DISPATCH_AT:-0}"
 PREV_LAST_DISPATCHED_ROLE="${PREV_LAST_DISPATCHED_ROLE:-none}"
 PREV_DISPATCH_COUNT="${PREV_DISPATCH_COUNT:-0}"
 
-PRIMARY_LANE_STATUS="$(read_lane_json primary status)"
-SECONDARY_LANE_STATUS="$(read_lane_json secondary status)"
-PRIMARY_LANE_SIGNATURE="$(read_lane_json primary signature)"
-SECONDARY_LANE_SIGNATURE="$(read_lane_json secondary signature)"
-
-PRIMARY_TERMINAL=0
-SECONDARY_TERMINAL=0
-case "${PRIMARY_LANE_STATUS:-}" in
-  done|blocked|defer)
-    if [ "${PRIMARY_LANE_SIGNATURE:-}" = "$PRIMARY_SIGNATURE" ]; then
-      PRIMARY_TERMINAL=1
-    fi
-    ;;
-esac
-case "${SECONDARY_LANE_STATUS:-}" in
-  done|blocked|defer)
-    if [ "${SECONDARY_LANE_SIGNATURE:-}" = "$SECONDARY_SIGNATURE" ]; then
-      SECONDARY_TERMINAL=1
-    fi
-    ;;
-esac
-
-if [ -z "$PREV_PRIMARY_SIGNATURE" ] && [ -z "$PREV_SECONDARY_SIGNATURE" ]; then
-  write_state_json "$NOW_MS" "$NOW_ISO" "$PRIMARY_SIGNATURE" "$SECONDARY_SIGNATURE" "$PRIMARY_SESSION_UPDATED_AT" "$SECONDARY_SESSION_UPDATED_AT" "$NOW_MS" "$PREV_LAST_DISPATCH_AT" "$PREV_LAST_DISPATCHED_ROLE" "$PREV_DISPATCH_COUNT" "primed" "Initial supervisor snapshot recorded"
+if [ -z "$PREV_SIGNATURES_JSON" ]; then
+  write_state_json "$NOW_MS" "$NOW_ISO" "$CURRENT_SIGNATURES_JSON" "$CURRENT_SESSIONS_JSON" "$NOW_MS" "$PREV_LAST_DISPATCH_AT" "$PREV_LAST_DISPATCHED_ROLE" "$PREV_DISPATCH_COUNT" "primed" "Initial supervisor snapshot recorded"
   printf '[%s] primed: recorded initial repo snapshot\n' "$NOW_ISO"
   exit 0
 fi
 
 ACTIVITY_DETECTED=0
 if [ "$DISPATCH_MODE" = "diff-only" ]; then
-  if [ "$PRIMARY_SIGNATURE" != "$PREV_PRIMARY_SIGNATURE" ] || [ "$SECONDARY_SIGNATURE" != "$PREV_SECONDARY_SIGNATURE" ]; then
-    ACTIVITY_DETECTED=1
-  fi
+  ACTIVITY_DETECTED="$(node -e '
+    const previous = JSON.parse(process.argv[1]);
+    const current = JSON.parse(process.argv[2]);
+    const roles = [...new Set([...Object.keys(previous), ...Object.keys(current)])];
+    const changed = roles.some((role) => String(previous[role] || "") !== String(current[role] || ""));
+    process.stdout.write(changed ? "1" : "0");
+  ' "$PREV_SIGNATURES_JSON" "$CURRENT_SIGNATURES_JSON")"
 fi
 
 if [ "$ACTIVITY_DETECTED" -eq 1 ]; then
-  write_state_json "$NOW_MS" "$NOW_ISO" "$PRIMARY_SIGNATURE" "$SECONDARY_SIGNATURE" "$PRIMARY_SESSION_UPDATED_AT" "$SECONDARY_SESSION_UPDATED_AT" "$NOW_MS" "$PREV_LAST_DISPATCH_AT" "$PREV_LAST_DISPATCHED_ROLE" "$PREV_DISPATCH_COUNT" "activity" "Repo status changed since last tick"
+  write_state_json "$NOW_MS" "$NOW_ISO" "$CURRENT_SIGNATURES_JSON" "$CURRENT_SESSIONS_JSON" "$NOW_MS" "$PREV_LAST_DISPATCH_AT" "$PREV_LAST_DISPATCHED_ROLE" "$PREV_DISPATCH_COUNT" "activity" "Repo status changed since last tick"
   printf '[%s] activity: repo status changed, no dispatch\n' "$NOW_ISO"
   exit 0
 fi
@@ -402,23 +437,28 @@ DISPATCH_COOLDOWN_MS=$((DISPATCH_COOLDOWN_SECONDS * 1000))
 SINCE_LAST_DISPATCH_MS=$((NOW_MS - PREV_LAST_DISPATCH_AT))
 
 if [ "$INACTIVE_FOR_MS" -lt "$STALL_THRESHOLD_MS" ]; then
-  write_state_json "$NOW_MS" "$NOW_ISO" "$PRIMARY_SIGNATURE" "$SECONDARY_SIGNATURE" "$PRIMARY_SESSION_UPDATED_AT" "$SECONDARY_SESSION_UPDATED_AT" "$PREV_LAST_ACTIVITY_AT" "$PREV_LAST_DISPATCH_AT" "$PREV_LAST_DISPATCHED_ROLE" "$PREV_DISPATCH_COUNT" "waiting" "Idle, but below stall threshold"
+  write_state_json "$NOW_MS" "$NOW_ISO" "$CURRENT_SIGNATURES_JSON" "$CURRENT_SESSIONS_JSON" "$PREV_LAST_ACTIVITY_AT" "$PREV_LAST_DISPATCH_AT" "$PREV_LAST_DISPATCHED_ROLE" "$PREV_DISPATCH_COUNT" "waiting" "Idle, but below stall threshold"
   printf '[%s] waiting: idle for %ss, below %ss stall threshold\n' "$NOW_ISO" "$((INACTIVE_FOR_MS / 1000))" "$STALL_SECONDS"
   exit 0
 fi
 
 if [ "$SINCE_LAST_DISPATCH_MS" -lt "$DISPATCH_COOLDOWN_MS" ]; then
-  write_state_json "$NOW_MS" "$NOW_ISO" "$PRIMARY_SIGNATURE" "$SECONDARY_SIGNATURE" "$PRIMARY_SESSION_UPDATED_AT" "$SECONDARY_SESSION_UPDATED_AT" "$PREV_LAST_ACTIVITY_AT" "$PREV_LAST_DISPATCH_AT" "$PREV_LAST_DISPATCHED_ROLE" "$PREV_DISPATCH_COUNT" "cooldown" "Idle, but still in dispatch cooldown"
+  write_state_json "$NOW_MS" "$NOW_ISO" "$CURRENT_SIGNATURES_JSON" "$CURRENT_SESSIONS_JSON" "$PREV_LAST_ACTIVITY_AT" "$PREV_LAST_DISPATCH_AT" "$PREV_LAST_DISPATCHED_ROLE" "$PREV_DISPATCH_COUNT" "cooldown" "Idle, but still in dispatch cooldown"
   printf '[%s] cooldown: idle, but last dispatch was %ss ago\n' "$NOW_ISO" "$((SINCE_LAST_DISPATCH_MS / 1000))"
   exit 0
 fi
 
-PRIMARY_AGE_MS=$((NOW_MS - PRIMARY_SESSION_UPDATED_AT))
-SECONDARY_AGE_MS=$((NOW_MS - SECONDARY_SESSION_UPDATED_AT))
-ROLE_TO_DISPATCH="$(pick_role "$PREV_LAST_DISPATCHED_ROLE" "$PRIMARY_AGE_MS" "$SECONDARY_AGE_MS" "$PRIMARY_TERMINAL" "$SECONDARY_TERMINAL")"
+declare -A AGE_BY_ROLE=()
+for ROLE in "${ROLE_KEYS[@]}"; do
+  AGE_BY_ROLE["$ROLE"]=$((NOW_MS - ${SESSION_UPDATED_BY_ROLE[$ROLE]:-0}))
+done
+
+AGES_JSON="$(json_from_role_map AGE_BY_ROLE)"
+TERMINALS_JSON="$(json_from_role_map TERMINAL_BY_ROLE)"
+ROLE_TO_DISPATCH="$(pick_role "$PREV_LAST_DISPATCHED_ROLE" "$AGES_JSON" "$TERMINALS_JSON")"
 
 if [ "$ROLE_TO_DISPATCH" = "none" ]; then
-  write_state_json "$NOW_MS" "$NOW_ISO" "$PRIMARY_SIGNATURE" "$SECONDARY_SIGNATURE" "$PRIMARY_SESSION_UPDATED_AT" "$SECONDARY_SESSION_UPDATED_AT" "$PREV_LAST_ACTIVITY_AT" "$PREV_LAST_DISPATCH_AT" "$PREV_LAST_DISPATCHED_ROLE" "$PREV_DISPATCH_COUNT" "terminal" "All lanes are terminal for the current repo state"
+  write_state_json "$NOW_MS" "$NOW_ISO" "$CURRENT_SIGNATURES_JSON" "$CURRENT_SESSIONS_JSON" "$PREV_LAST_ACTIVITY_AT" "$PREV_LAST_DISPATCH_AT" "$PREV_LAST_DISPATCHED_ROLE" "$PREV_DISPATCH_COUNT" "terminal" "All lanes are terminal for the current repo state"
   printf '[%s] terminal: all lanes are done, blocked, or deferred for the current repo state\n' "$NOW_ISO"
   exit 0
 fi
@@ -436,26 +476,21 @@ HANDOFF: one short sentence another fresh session could continue from
 
 Keep each field brief and concrete."
 
-if [ "$ROLE_TO_DISPATCH" = "primary" ]; then
-  ROLE_STATUS_BEFORE="$PRIMARY_STATUS"
-else
-  ROLE_STATUS_BEFORE="$SECONDARY_STATUS"
-fi
+ROLE_STATUS_BEFORE="${STATUS_BY_ROLE[$ROLE_TO_DISPATCH]}"
 
 set +e
 DISPATCH_OUTPUT="$(dispatch_role "$ROLE_TO_DISPATCH" "$PROMPT" 2>&1)"
 DISPATCH_EXIT_CODE=$?
 set -e
 
-if [ "$ROLE_TO_DISPATCH" = "primary" ]; then
-  ROLE_STATUS_AFTER="$(path_status "${PRIMARY_PATHS[@]}")"
-  SESSION_META_AFTER="$(latest_session_meta_json "$OPENCLAW_HOME/agents/$PRIMARY_AGENT_ID/sessions/sessions.json")"
-  ROLE_SIGNATURE="$PRIMARY_SIGNATURE"
-else
-  ROLE_STATUS_AFTER="$(path_status "${SECONDARY_PATHS[@]}")"
-  SESSION_META_AFTER="$(latest_session_meta_json "$OPENCLAW_HOME/agents/$SECONDARY_AGENT_ID/sessions/sessions.json")"
-  ROLE_SIGNATURE="$SECONDARY_SIGNATURE"
-fi
+ROLE_PATHS_AFTER=()
+while IFS= read -r line; do
+  [ -n "$line" ] && ROLE_PATHS_AFTER+=("$line")
+done < <(node "$CONFIG_SCRIPT" agent-paths "$ROLE_TO_DISPATCH")
+
+ROLE_STATUS_AFTER="$(path_status "${ROLE_PATHS_AFTER[@]}")"
+SESSION_META_AFTER="$(latest_session_meta_json "$OPENCLAW_HOME/agents/${AGENT_ID_BY_ROLE[$ROLE_TO_DISPATCH]}/sessions/sessions.json")"
+ROLE_SIGNATURE="${SIGNATURE_BY_ROLE[$ROLE_TO_DISPATCH]}"
 
 REPORT_JSON="$(parse_dispatch_report_json "$DISPATCH_OUTPUT")"
 CHANGED_PATHS_JSON="$(status_diff_paths_json "$ROLE_STATUS_BEFORE" "$ROLE_STATUS_AFTER")"
@@ -477,11 +512,11 @@ write_lane_json "$ROLE_TO_DISPATCH" "$NOW_MS" "$NOW_ISO" "$ROLE_SIGNATURE" "${RE
 
 if [ "$DISPATCH_EXIT_CODE" -eq 0 ]; then
   NEW_DISPATCH_COUNT=$((PREV_DISPATCH_COUNT + 1))
-  write_state_json "$NOW_MS" "$NOW_ISO" "$PRIMARY_SIGNATURE" "$SECONDARY_SIGNATURE" "$PRIMARY_SESSION_UPDATED_AT" "$SECONDARY_SESSION_UPDATED_AT" "$PREV_LAST_ACTIVITY_AT" "$NOW_MS" "$ROLE_TO_DISPATCH" "$NEW_DISPATCH_COUNT" "dispatched" "Idle threshold reached; dispatched ${ROLE_TO_DISPATCH} agent (${REPORT_STATUS:-continue})"
+  write_state_json "$NOW_MS" "$NOW_ISO" "$CURRENT_SIGNATURES_JSON" "$CURRENT_SESSIONS_JSON" "$PREV_LAST_ACTIVITY_AT" "$NOW_MS" "$ROLE_TO_DISPATCH" "$NEW_DISPATCH_COUNT" "dispatched" "Idle threshold reached; dispatched ${ROLE_TO_DISPATCH} agent (${REPORT_STATUS:-continue})"
   printf '[%s] dispatched %s agent (status=%s)\n' "$NOW_ISO" "$ROLE_TO_DISPATCH" "${REPORT_STATUS:-continue}"
   printf '%s\n' "$DISPATCH_OUTPUT"
 else
-  write_state_json "$NOW_MS" "$NOW_ISO" "$PRIMARY_SIGNATURE" "$SECONDARY_SIGNATURE" "$PRIMARY_SESSION_UPDATED_AT" "$SECONDARY_SESSION_UPDATED_AT" "$PREV_LAST_ACTIVITY_AT" "$PREV_LAST_DISPATCH_AT" "$PREV_LAST_DISPATCHED_ROLE" "$PREV_DISPATCH_COUNT" "error" "Dispatch failed for ${ROLE_TO_DISPATCH} agent"
+  write_state_json "$NOW_MS" "$NOW_ISO" "$CURRENT_SIGNATURES_JSON" "$CURRENT_SESSIONS_JSON" "$PREV_LAST_ACTIVITY_AT" "$PREV_LAST_DISPATCH_AT" "$PREV_LAST_DISPATCHED_ROLE" "$PREV_DISPATCH_COUNT" "error" "Dispatch failed for ${ROLE_TO_DISPATCH} agent"
   printf '[%s] error: failed to dispatch %s agent\n' "$NOW_ISO" "$ROLE_TO_DISPATCH" >&2
   printf '%s\n' "$DISPATCH_OUTPUT" >&2
   exit "$DISPATCH_EXIT_CODE"

@@ -2,7 +2,7 @@
 
 A simple starter for people who want OpenClaw to orchestrate `n` AI agents inside one project.
 
-This repo ships with a simple two-agent example so it is easy to understand and easy to try first.
+This repo ships with a simple two-agent example so it is easy to understand and easy to try first, but the supervisor now reads the full `agents` array from `.openclaw/project.json`, so larger agent sets do not require code changes.
 
 The important part is not just that "a few agents exist."
 
@@ -52,7 +52,7 @@ This repo gives you:
 - a place to describe your project
 - a place to describe what each agent should do
 - scripts to start and check the workflow
-- a background loop that can wake up and send work automatically
+- a background loop that can wake up and send work automatically across any number of configured agents
 - a per-dispatch summary trail so you can review what each run did without committing every few minutes
 - a clear best-practice pattern for deciding when an agent should stop instead of looping forever
 
@@ -134,6 +134,8 @@ If you choose to use OpenClaw hooks, the cleanest role for them is:
 
 The repo starts with a simple two-agent setup because it is the easiest version to understand.
 
+The supervisor itself is not limited to two roles. Add more agent entries to `.openclaw/project.json`, create matching role files, rerun setup, and the same scripts keep working.
+
 If you want a more realistic split, see:
 
 - [docs/examples/data-plus-frontend.md](./docs/examples/data-plus-frontend.md)
@@ -174,6 +176,7 @@ bash scripts/openclaw/dispatch-agent.sh <agent-key> "Take the next safe task for
 
 ```bash
 npm run agents:setup
+npm run agents:dispatch -- <agent-key> "your task"
 npm run agents:primary
 npm run agents:secondary
 npm run agents:supervisor:start

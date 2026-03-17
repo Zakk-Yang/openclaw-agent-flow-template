@@ -117,6 +117,8 @@ Then rerun:
 bash scripts/openclaw/setup-project-agents.sh
 ```
 
+No supervisor code change is required. The template now reads all configured agent entries dynamically.
+
 Manual test:
 
 ```bash

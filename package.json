@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "agents:setup": "bash scripts/openclaw/setup-project-agents.sh",
+    "agents:dispatch": "bash scripts/openclaw/dispatch-agent.sh",
     "agents:primary": "bash scripts/openclaw/dispatch-primary.sh",
     "agents:secondary": "bash scripts/openclaw/dispatch-secondary.sh",
     "agents:supervisor:once": "bash scripts/openclaw/supervisor.sh",

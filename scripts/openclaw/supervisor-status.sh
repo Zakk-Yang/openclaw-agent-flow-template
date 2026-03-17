@@ -34,15 +34,21 @@ if [ -f "$LANE_STATE_FILE" ]; then
   printf '\nLane state:\n'
   node -e '
     const fs = require("fs");
-    const payload = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-    for (const role of ["primary", "secondary"]) {
+    const { execFileSync } = require("child_process");
+    const lanePath = process.argv[1];
+    const configScript = process.argv[2];
+    const payload = JSON.parse(fs.readFileSync(lanePath, "utf8"));
+    const roles = execFileSync("node", [configScript, "agent-keys"], { encoding: "utf8" })
+      .split("\n")
+      .filter(Boolean);
+    for (const role of roles) {
       const lane = payload[role];
       if (!lane) continue;
       console.log(`- ${role}: status=${lane.status || "unknown"} session=${lane.sessionId || "none"}`);
       if (lane.goal) console.log(`  goal: ${lane.goal}`);
       if (lane.next) console.log(`  next: ${lane.next}`);
     }
-  ' "$LANE_STATE_FILE"
+  ' "$LANE_STATE_FILE" "$CONFIG_SCRIPT"
 else
   printf '\nLane state: missing\n'
 fi
