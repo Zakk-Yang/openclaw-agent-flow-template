@@ -50,6 +50,26 @@ Then the supervisor or operator can stop redispatching lanes that are already do
 
 Without this, the loop can waste time on repeated no-op audits or repeated retries against the same blocker.
 
+## Hooks Vs Supervisor
+
+OpenClaw hooks are useful, but they should usually not be the main controller for this pattern.
+
+Best practice:
+
+- **supervisor** owns dispatch decisions
+- **agent prompts** require the run to end with a status
+- **agent output** reports `continue`, `done`, `blocked`, or `defer`
+- **hooks** handle side effects such as:
+  - writing summaries
+  - saving memory
+  - sending notifications
+  - appending status artifacts
+
+This keeps the workflow easy to debug:
+
+- one place decides whether to dispatch again
+- hooks help around that decision instead of replacing it
+
 See [stop-conditions.md](./stop-conditions.md).
 
 ## Why This Shape

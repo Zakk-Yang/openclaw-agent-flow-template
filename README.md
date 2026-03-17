@@ -124,6 +124,11 @@ The best practice is:
 - the agent decides whether real work remains
 - the repo records that status so the loop knows when to stop
 
+If you choose to use OpenClaw hooks, the cleanest role for them is:
+
+- help with side effects like summaries, memory snapshots, or notifications
+- not replace the supervisor as the main dispatch decision-maker
+
 ## Starter Layouts
 
 The repo starts with a simple two-agent setup because it is the easiest version to understand.

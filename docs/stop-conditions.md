@@ -53,6 +53,24 @@ Best practice is:
 3. The repo stores that result in a small machine-readable summary.
 4. The supervisor stops redispatching lanes that are `done`, `blocked`, or `defer` unless a new input resets them.
 
+## Who Decides What
+
+Use this split:
+
+- **Prompts / role briefs** tell the agent how to report the result.
+- **The agent** decides whether the lane is `continue`, `done`, `blocked`, or `defer`.
+- **The supervisor** decides whether to dispatch the lane again.
+- **Hooks** are optional helpers for side effects such as logging, notifications, memory snapshots, or writing status artifacts.
+
+So hooks are useful, but they are not the main workflow brain.
+
+The simplest reliable pattern is:
+
+- prompts define the status contract
+- the agent returns the status
+- the supervisor enforces the stop condition
+- hooks record or react to the event if you want extra automation
+
 ## Good Examples
 
 ### `continue`
@@ -87,6 +105,8 @@ Ask agents to finish every run with:
   - `blocked`
   - `defer`
 - one sentence explaining why
+
+This prompt contract is what lets the supervisor make sane dispatch decisions later.
 
 ## Practical Outcome
 

@@ -40,6 +40,11 @@ Dispatch policy:
 - Build in explicit stop conditions so the loop knows when to stop.
 - Each agent run should end with one of: continue, done, blocked, or defer.
 - Do not keep redispatching a lane forever just because the repo is idle.
+- Keep the control split clean:
+- prompts define how agents report status
+- agents decide the status they return
+- the supervisor decides whether to dispatch again
+- hooks are optional side effects for logging, summaries, memory, or notifications
 
 Verification:
 - Verify both agents can be dispatched manually.
