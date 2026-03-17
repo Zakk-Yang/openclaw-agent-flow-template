@@ -1,0 +1,37 @@
+{
+  "project": {
+    "slug": "example-agent-flow",
+    "name": "Example Agent Flow",
+    "heartbeat_interval_seconds": 300,
+    "stall_seconds": 300,
+    "dispatch_cooldown_seconds": 300,
+    "dispatch_mode": "diff-only",
+    "tmux_session": "agent-flow-heartbeat"
+  },
+  "agents": [
+    {
+      "key": "primary",
+      "agent_id_suffix": "primary",
+      "identity_name": "Example Primary Agent",
+      "role_label": "primary agent",
+      "role_file": ".openclaw/roles/agent-a.md",
+      "focus_paths": [
+        "src",
+        "docs"
+      ],
+      "idle_prompt": "Repository heartbeat: the repo looks idle. Review AGENTS.md, current repo status, and your role brief. Pick the next safe primary-agent task, execute it carefully, verify it, and explain what changed or what blocker prevented changes."
+    },
+    {
+      "key": "secondary",
+      "agent_id_suffix": "secondary",
+      "identity_name": "Example Secondary Agent",
+      "role_label": "secondary agent",
+      "role_file": ".openclaw/roles/agent-b.md",
+      "focus_paths": [
+        "docs",
+        "scripts"
+      ],
+      "idle_prompt": "Repository heartbeat: the repo looks idle. Review AGENTS.md, current repo status, and your role brief. Pick the next safe secondary-agent task, execute it carefully, verify it, and explain what changed or what blocker prevented changes."
+    }
+  ]
+}

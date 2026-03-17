@@ -1,0 +1,15 @@
+{
+  "name": "openclaw-agent-flow-template",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "agents:setup": "bash scripts/openclaw/setup-project-agents.sh",
+    "agents:primary": "bash scripts/openclaw/dispatch-primary.sh",
+    "agents:secondary": "bash scripts/openclaw/dispatch-secondary.sh",
+    "agents:supervisor:once": "bash scripts/openclaw/supervisor.sh",
+    "agents:supervisor:start": "bash scripts/openclaw/start-supervisor-tmux.sh",
+    "agents:supervisor:restart": "bash scripts/openclaw/start-supervisor-tmux.sh --restart",
+    "agents:supervisor:status": "bash scripts/openclaw/supervisor-status.sh",
+    "agents:supervisor:stop": "bash scripts/openclaw/stop-supervisor-tmux.sh"
+  }
+}
