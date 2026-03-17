@@ -12,6 +12,8 @@ This template is meant to be copied into a real project, then edited in place.
 
 If you want one copy-paste prompt for Codex or another coding agent, use [prompt.txt](./prompt.txt).
 
+If you want a machine-level bootstrap command for creating new projects from this template, see [docs/global-setup.md](./docs/global-setup.md).
+
 ## What It Gives You
 
 - one place to define your project goal and agent roles
@@ -64,22 +66,31 @@ npm run agents:supervisor:status
 npm run agents:supervisor:stop
 ```
 
+## Global Bootstrap
+
+This repo also includes an optional global bootstrap layer.
+
+Use it when you want one reusable command that creates new repos from this template while keeping actual agent behavior local to each project.
+
+Install it:
+
+```bash
+bash scripts/bootstrap/install-global.sh
+```
+
+Then create a new project:
+
+```bash
+new-agent-flow my-project
+```
+
 ## File Map
 
 - [.openclaw/project.json](./.openclaw/project.json): project and agent config
 - [.openclaw/roles/](./.openclaw/roles): role briefs
+- [scripts/bootstrap/](./scripts/bootstrap): optional machine-level bootstrap layer
 - [scripts/openclaw/](./scripts/openclaw): setup, dispatch, and supervisor scripts
 - [docs/quickstart.md](./docs/quickstart.md): practical setup guide
+- [docs/global-setup.md](./docs/global-setup.md): how to install the global bootstrap layer
 - [docs/customization.md](./docs/customization.md): how to adapt for a real repo
 - [docs/architecture.md](./docs/architecture.md): runtime design
-
-## Public Repo Notes
-
-This repo is meant to be published publicly. Before you push your own copy:
-
-- remove machine-specific paths
-- replace sample role text with your real project roles
-- review allowed file areas carefully
-- verify `gh auth status` works before pushing
-
-Current machine note: GitHub CLI auth is invalid on this machine right now, so public push needs re-auth first.
