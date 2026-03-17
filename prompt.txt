@@ -1,0 +1,39 @@
+Use this repository as the reference implementation:
+https://github.com/Zakk-Yang/openclaw-agent-flow-template
+
+Set up this repository to use the same OpenClaw agent-flow pattern.
+
+Project goal:
+- <PROJECT_GOAL>
+
+Agents:
+- Agent A should do: <AGENT_A_MISSION>
+- Agent A allowed areas: <AGENT_A_ALLOWED_PATHS>
+- Agent A should avoid: <AGENT_A_AVOID_PATHS>
+
+- Agent B should do: <AGENT_B_MISSION>
+- Agent B allowed areas: <AGENT_B_ALLOWED_PATHS>
+- Agent B should avoid: <AGENT_B_AVOID_PATHS>
+
+Requirements:
+- Use OpenClaw as the orchestrator.
+- Use exactly two project-local agents.
+- Use heartbeat + tmux + shell scripts + GSD only.
+- Do not use cron.
+- Make the setup project-local, idempotent, and easy to understand.
+- Add role briefs, setup scripts, dispatch scripts, supervisor scripts, and docs.
+
+Dispatch policy:
+- Heartbeat every 5 minutes.
+- Use diff-only dispatch.
+- If repo diff/status has not changed for 5 minutes, dispatch one agent.
+- If repo diff/status changed, do not dispatch.
+- Do not let agent session timestamp noise suppress dispatch.
+
+Verification:
+- Verify both agents can be dispatched manually.
+- Verify the supervisor runs in tmux.
+- Verify idle repo -> automatic dispatch.
+- Show the commands needed to operate the system.
+
+Use GSD discipline, preferably gsd-quick unless a full phase is clearly needed.

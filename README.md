@@ -10,6 +10,8 @@ A small, public starter repo for running a two-agent OpenClaw workflow with:
 
 This template is meant to be copied into a real project, then edited in place.
 
+If you want one copy-paste prompt for Codex or another coding agent, use [prompt.txt](./prompt.txt).
+
 ## What It Gives You
 
 - one place to define your project goal and agent roles
