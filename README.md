@@ -4,7 +4,7 @@ A simple starter for people who want OpenClaw to orchestrate `n` AI agents insid
 
 This repo ships with a simple two-agent example so it is easy to understand and easy to try first.
 
-The main idea of this project is not just "a few agents exist."
+The important part is not just that "a few agents exist."
 
 The important part is this:
 
@@ -13,6 +13,33 @@ The important part is this:
 - when the repo is idle, it sends the next task to an agent
 - when the repo changes, it waits and checks again
 - this creates an iterative work loop instead of one-off agent calls
+
+## 30-Second Quickstart
+
+If you already understand the idea, this is the shortest path to seeing it work:
+
+```bash
+# 1) edit these for your real project
+$EDITOR AGENTS.md \
+  .openclaw/project.json \
+  .openclaw/roles/agent-a.md \
+  .openclaw/roles/agent-b.md
+
+# 2) register the project-local agents
+bash scripts/openclaw/setup-project-agents.sh
+
+# 3) sanity-check manual dispatch
+bash scripts/openclaw/dispatch-primary.sh "State your role in one short sentence."
+bash scripts/openclaw/dispatch-secondary.sh "State your role in one short sentence."
+
+# 4) start the background loop
+bash scripts/openclaw/start-supervisor-tmux.sh
+bash scripts/openclaw/supervisor-status.sh
+```
+
+For the fuller walkthrough, see [docs/quickstart.md](./docs/quickstart.md).
+
+## What You Get
 
 This repo gives you:
 
@@ -63,11 +90,26 @@ This template follows a simple idea:
 
 The default rule is `diff-only`, which means the workflow reacts to project file changes, not just agent chatter.
 
-So the outstanding point of this template is:
+So the main point of this template is:
 
 - OpenClaw is orchestrating an iterative agent workflow
 - not just launching isolated agent prompts
 - and that pattern can work with `n` specialized agents
+
+## Starter Layouts
+
+The repo starts with a simple two-agent setup because it is the easiest version to understand.
+
+If you want a more realistic split, see:
+
+- [docs/examples/data-plus-frontend.md](./docs/examples/data-plus-frontend.md)
+- [docs/examples/three-agent-product.md](./docs/examples/three-agent-product.md)
+
+The three-agent example is a good default for a real product repo:
+
+- backend or product agent
+- frontend or UX agent
+- quality or ops agent
 
 ## Fast Start
 
@@ -89,6 +131,9 @@ If you want to send work manually:
 ```bash
 bash scripts/openclaw/dispatch-primary.sh "Review the repo and take the next safe task."
 bash scripts/openclaw/dispatch-secondary.sh "Improve the next clear part of the product."
+
+# for any extra agent beyond the starter pair
+bash scripts/openclaw/dispatch-agent.sh <agent-key> "Take the next safe task for your role."
 ```
 
 ## Useful Commands
@@ -101,6 +146,18 @@ npm run agents:supervisor:start
 npm run agents:supervisor:status
 npm run agents:supervisor:stop
 ```
+
+## When Not To Use This Template
+
+This template is a bad fit if:
+
+- you only want one-off agent runs instead of an ongoing repo loop
+- you only need a single agent and do not want role-based dispatch
+- your repo has no clear safety boundaries or path ownership
+- you do not want a tmux-based local supervisor process
+- you actually need a heavier queue, approvals, or cross-machine job system
+
+In those cases, a plain ACP session or a simpler single-agent workflow is usually better.
 
 ## Global Bootstrap
 

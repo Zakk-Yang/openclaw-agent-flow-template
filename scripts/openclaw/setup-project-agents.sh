@@ -50,3 +50,4 @@ done < <(node "$CONFIG_SCRIPT" agent-keys)
 printf '\nDispatch commands:\n'
 printf '  bash scripts/openclaw/dispatch-primary.sh "your task"\n'
 printf '  bash scripts/openclaw/dispatch-secondary.sh "your task"\n'
+printf '  bash scripts/openclaw/dispatch-agent.sh <agent-key> "your task"\n'
