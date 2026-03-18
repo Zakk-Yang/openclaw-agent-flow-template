@@ -54,6 +54,7 @@ This repo gives you:
 - scripts to start and check the workflow
 - a background loop that can wake up and send work automatically across any number of configured agents
 - a per-dispatch summary trail so you can review what each run did without committing every few minutes
+- a built-in usage / cost breakdown script for one repo or all `_active` repos
 - a clear best-practice pattern for deciding when an agent should stop instead of looping forever
 
 You can copy this repo into a real project and edit it there.
@@ -182,7 +183,32 @@ npm run agents:secondary
 npm run agents:supervisor:start
 npm run agents:supervisor:status
 npm run agents:supervisor:stop
+npm run agents:costs
+npm run agents:costs -- --start 2026-03-01 --end 2026-03-31
+npm run agents:costs:active
 ```
+
+## Session Cost Breakdown
+
+This template now includes a session-usage breakdown script.
+
+Use it when you want to see:
+
+- token usage by configured agent
+- cost by agent session
+- totals for one repo
+- totals across multiple agent-flow repos under `~/projects/_active`
+
+Examples:
+
+```bash
+npm run agents:costs
+npm run agents:costs -- --start 2026-03-01 --end 2026-03-31
+npm run agents:costs:active
+npm run agents:costs:active -- --active-root ~/projects/_active --start 2026-03-01
+```
+
+The script uses `.openclaw/project.json` to map configured agents to session keys like `agent:<project-slug>-<agent-suffix>:main`, then queries `openclaw gateway call sessions.usage` and prints a per-agent breakdown. It also checks `contextWeight.workspaceDir`, so if a project is effectively using a shared project-level session instead of one session per agent, that shared session still shows up under the project totals. If it finds matching `agent:<slug>-*:main` sessions that are not in the current config, it shows them as discovered sessions so old or renamed lanes are not silently hidden.
 
 ## Stop Conditions
 

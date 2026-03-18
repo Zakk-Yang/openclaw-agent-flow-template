@@ -11,6 +11,8 @@
     "agents:supervisor:start": "bash scripts/openclaw/start-supervisor-tmux.sh",
     "agents:supervisor:restart": "bash scripts/openclaw/start-supervisor-tmux.sh --restart",
     "agents:supervisor:status": "bash scripts/openclaw/supervisor-status.sh",
-    "agents:supervisor:stop": "bash scripts/openclaw/stop-supervisor-tmux.sh"
+    "agents:supervisor:stop": "bash scripts/openclaw/stop-supervisor-tmux.sh",
+    "agents:costs": "bash scripts/openclaw/session-costs.sh",
+    "agents:costs:active": "bash scripts/openclaw/session-costs.sh --active-root ~/projects/_active"
   }
 }
